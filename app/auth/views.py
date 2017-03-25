@@ -17,7 +17,8 @@ def before_request():
                 and request.endpoint \
                 and request.endpoint[:5] != 'auth.' \
                 and request.endpoint != 'static':
-            return redirect(url_for('auth.unconfirmed'))
+            pass
+            #return redirect(url_for('auth.unconfirmed'))
 
 
 @auth.route('/unconfirmed')
