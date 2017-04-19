@@ -38,7 +38,7 @@ class FlaskClientTestCase(unittest.TestCase):
             'password': 'cat'
         }, follow_redirects=True)
         self.assertTrue(re.search(b'Hello,\s+john!', response.data))
-        self.assertTrue(
+        self.assertFalse(
             b'You have not confirmed your account yet' in response.data)
 
         # send a confirmation token
