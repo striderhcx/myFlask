@@ -152,6 +152,19 @@ def edit(id):
     form.body.data = post.body
     return render_template('edit_post.html', form=form)
 
+@main.route('/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def delete(id):
+    post = Post.query.get_or_404(id)
+    if current_user != post.author and \
+            not current_user.can(Permission.ADMINISTER):
+        abort(403)
+    for comment in post.comments:
+        db.session.delete(comment)
+    db.session.delete(post)
+    flash('The post has been delete!')
+    return redirect(url_for('.user', username=post.author.username))
+
 
 @main.route('/follow/<username>')
 @login_required
