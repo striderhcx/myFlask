@@ -86,6 +86,7 @@ class User(UserMixin, db.Model):
                                 lazy='dynamic',
                                 cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
+    real_avatar = db.Column(db.String(128), default=None)#[HCX]:user avatar
 
     @staticmethod
     def generate_fake(count=100):

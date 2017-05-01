@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, abort, flash, request,\
-    current_app, make_response
+    current_app, make_response # ,send_from_directory # [HCX]:temp unused(no preview)
 from flask_login import login_required, current_user
 from flask_sqlalchemy import get_debug_queries
 from . import main
@@ -8,6 +8,8 @@ from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
 from .. import db
 from ..models import Permission, Role, User, Post, Comment
 from ..decorators import admin_required, permission_required
+import os
+#from werkzeug.utils import secure_filename # [HCX]: temp unused!
 
 
 @main.after_app_request
@@ -77,6 +79,17 @@ def edit_profile():
         current_user.name = form.name.data
         current_user.location = form.location.data
         current_user.about_me = form.about_me.data
+        # [HCX]: Add user upload avatar
+        avatar = request.files['avatar']# [HCX]:the dict key name must the same as the form's avatar name!
+        fname = avatar.filename
+        UPLOAD_FOLDER = current_app.config['UPLOAD_FOLDER']
+        ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif']
+        flag = '.' in fname and fname.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+        if not flag:
+            flash('Upload file type is not support or is null!')
+            return redirect(url_for('.user', username=current_user.username))
+        avatar.save('{}{}_{}'.format(UPLOAD_FOLDER, current_user.username, fname))
+        current_user.real_avatar = '/static/avatar/{}_{}'.format(current_user.username, fname)
         db.session.add(current_user)
         flash('Your profile has been updated.')
         return redirect(url_for('.user', username=current_user.username))
@@ -100,6 +113,17 @@ def edit_profile_admin(id):
         user.name = form.name.data
         user.location = form.location.data
         user.about_me = form.about_me.data
+        # [HCX]: Add user upload avatar
+        avatar = request.files['avatar']# [HCX]:the dict key name must the same as the form's avatar name!
+        fname = avatar.filename
+        UPLOAD_FOLDER = current_app.config['UPLOAD_FOLDER']
+        ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif']
+        flag = '.' in fname and fname.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+        if not flag:
+            flash('Upload file type is not support or is null!')
+            return redirect(url_for('.user', username=user.username))
+        avatar.save('{}{}_{}'.format(UPLOAD_FOLDER, user.username, fname))
+        user.real_avatar = '/static/avatar/{}_{}'.format(user.username, fname)
         db.session.add(user)
         flash('The profile has been updated.')
         return redirect(url_for('.user', username=user.username))
