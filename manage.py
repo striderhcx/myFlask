@@ -7,7 +7,7 @@ if os.environ.get('FLASK_COVERAGE'):
     COV.start()
 
 from app import create_app, db
-from app.models import User, Follow, Role, Permission, Post, Comment
+from app.models import User, Follow, Role, Permission, Post, Comment, Category
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
@@ -66,8 +66,12 @@ def deploy():
     # create user roles
     Role.insert_roles()
 
+    # create event categerys
+    Category.insert_categorys();
+
     # create self-follows for all users
     User.add_self_follows()
+
 
 
 if __name__ == '__main__':
