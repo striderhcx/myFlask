@@ -21,6 +21,9 @@
                 {% endif %}
             </div>
             <div class="post-footer">
+		 <a href="{{ url_for('.category_posts',id=post.category.id, author_name=post.author.username) }}">
+		    <span class="label label-primary">分类:{{ post.category.name }}</span>
+		</a>
                 {% if current_user == post.author %}
                 <a href="{{ url_for('.edit', id=post.id) }}">
                     <span class="label label-primary">编辑</span>

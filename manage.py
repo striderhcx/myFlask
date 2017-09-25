@@ -7,7 +7,7 @@ if os.environ.get('FLASK_COVERAGE'):
     COV.start()
 
 from app import create_app, db
-from app.models import User, Follow, Role, Permission, Post, Comment, Category
+from app.models import User, Follow, Role, Permission, Post, Comment, Category, PostCategory
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
@@ -68,6 +68,9 @@ def deploy():
 
     # create event categerys
     Category.insert_categorys();
+
+    # cretae post categorys
+    PostCategory.insert_categorys();
 
     # create self-follows for all users
     User.add_self_follows()

@@ -8,11 +8,27 @@
 <div class="page-header">
     <h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Stranger{% endif %}!</h1>
 </div>
+
+<div style="float:right; display:inline; margin:0px;padding:0px;">
+    <em>文章分类</em>
+    <ul>
+	{% for category in post_categories %}
+	    <li>
+	        <a href="{{ url_for('.category_posts', author_name=current_user.username, id=category.id) }}">
+                {{ category.name }}
+            </a>
+	    </li>
+	{% endfor %}
+    <a href="{{ url_for('.add_post_category') }}">添加文章分类</a>
+    </ul>
+</div>
+
 <div>
     {% if current_user.can(Permission.WRITE_ARTICLES) %}
     {{ wtf.quick_form(form) }}
     {% endif %}
 </div>
+
 <div class="post-tabs">
     <ul class="nav nav-tabs">
         <li{% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_all') }}">All</a></li>

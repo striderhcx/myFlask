@@ -1,10 +1,11 @@
+#coding=utf-8
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
     SubmitField, FileField
 from wtforms.validators import Required, Length, Email, Regexp
 from wtforms import ValidationError
 from flask_pagedown.fields import PageDownField
-from ..models import Role, User
+from ..models import Role, User, PostCategory
 
 
 class NameForm(FlaskForm):
@@ -54,8 +55,17 @@ class EditProfileAdminForm(FlaskForm):
 
 class PostForm(FlaskForm):
     body = PageDownField("What's on your mind?", validators=[Required()])
+    category = SelectField(u'文章分类', coerce=int)
     submit = SubmitField('Submit')
 
+    def __init__(self, *args, **kwargs):
+        super(PostForm, self).__init__(*args, **kwargs)
+        self.category.choices = [(category.id, category.name)
+                                for category in PostCategory.query.order_by(PostCategory.name).all()]
+
+class AddPostCategoryForm(FlaskForm):
+    new_category = StringField(u'请输入新分类', validators=[Length(0, 64)])
+    submit = SubmitField('Submit')
 
 class CommentForm(FlaskForm):
     body = StringField('Enter your comment', validators=[Required()])

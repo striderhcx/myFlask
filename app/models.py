@@ -1,3 +1,4 @@
+#coding=utf-8
 from datetime import datetime
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -295,6 +296,7 @@ class Post(db.Model):
     body_html = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    category_id = db.Column(db.Integer,db.ForeignKey('postcategories.id'))
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
     @staticmethod
@@ -344,6 +346,26 @@ class Post(db.Model):
 
 
 db.event.listen(Post.body, 'set', Post.on_changed_body)
+
+class PostCategory(db.Model):
+    __tablename__ = 'postcategories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    posts = db.relationship('Post', backref='category', lazy='dynamic')
+
+    @staticmethod
+    def insert_categorys():
+        categories = [u'c/c++',u'java',u'python',u'javascript',u'c#',u'个人随想',u'工作记录',u'shell']
+        for category in categories:
+            postcategory = PostCategory.query.filter_by(name=category).first()
+            if postcategory is None:
+                postcategory = PostCategory(name=category)
+                db.session.add(postcategory)
+        db.session.commit()
+
+    def __repr__(self):
+        return '<PostCategoty {}>'.format(self.name)
+
 
 
 class Comment(db.Model):

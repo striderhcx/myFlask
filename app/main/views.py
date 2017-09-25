@@ -1,12 +1,13 @@
+#coding=utf-8
 from flask import render_template, redirect, url_for, abort, flash, request,\
     current_app, make_response # ,send_from_directory # [HCX]:temp unused(no preview)
 from flask_login import login_required, current_user
 from flask_sqlalchemy import get_debug_queries
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
-    CommentForm
+    CommentForm, AddPostCategoryForm
 from .. import db
-from ..models import Permission, Role, User, Post, Comment
+from ..models import Permission, Role, User, Post, Comment, PostCategory
 from ..decorators import admin_required, permission_required
 import os
 #from werkzeug.utils import secure_filename # [HCX]: temp unused!
@@ -40,7 +41,8 @@ def index():
     if current_user.can(Permission.WRITE_ARTICLES) and \
             form.validate_on_submit():
         post = Post(body=form.body.data,
-                    author=current_user._get_current_object())
+                    author=current_user._get_current_object(),
+                    category=PostCategory.query.get(form.category.data))
         db.session.add(post)
         return redirect(url_for('.index'))
     page = request.args.get('page', 1, type=int)
@@ -56,7 +58,7 @@ def index():
         error_out=False)
     posts = pagination.items
     return render_template('index.html', form=form, posts=posts,
-                           show_followed=show_followed, pagination=pagination)
+                           show_followed=show_followed, pagination=pagination,post_categories=PostCategory.query.all())
 
 
 @main.route('/user/<username>')
@@ -189,6 +191,48 @@ def delete(id):
     flash('The post has been delete!')
     return redirect(url_for('.user', username=post.author.username))
 
+#路由捕获多个关键字参数:author_name和id
+#展示用户名为author_username 的User对应的所有分类为id的文章
+@main.route('/category_posts/<author_name>/<int:id>', methods=['GET', 'POST'])
+@login_required
+def category_posts(author_name, id):
+    post_category = PostCategory.query.get_or_404(id)
+    #找到作者
+    post_author = User.query.filter_by(username=author_name).first()
+    page = request.args.get('page', 1, type=int)
+    #need to paginate: post_category.posts,只显示这篇被点击的该篇文章对应的作者的分类为id的文章
+    pagination = post_category.posts.filter_by(author=post_author).order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    if len(posts):
+        return render_template('show_category_posts.html', posts=posts, category=post_category,
+                                pagination=pagination)
+    else:
+        #因为必须要保证posts大于0，才能保证不出错模板中posts[0]不出错，所以这里处理一下
+        flash(u'暂无该分类文章')
+        return render_template('show_category_posts.html', posts=posts, category=post_category)
+
+#
+@main.route('/add_post_category', methods=['GET', 'POST'])
+@login_required
+def add_post_category():
+    form = AddPostCategoryForm()
+    if form.validate_on_submit():
+        new_category = PostCategory(name=form.new_category.data)
+        db.session.add(new_category)
+        #必须立即提交，否则不会马上看到生效的修改
+        try:
+            db.session.commit()
+        except:
+            flash(u'分类已存在!')
+            #回滚，并且清空表单
+            form.new_category.data=''
+            db.session.rollback()
+            return render_template('add_post_category.html', form=form)
+        else:
+            return redirect(url_for('.index'))
+    return render_template('add_post_category.html', form=form)
 
 @main.route('/follow/<username>')
 @login_required
