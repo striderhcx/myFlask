@@ -91,6 +91,9 @@ class User(UserMixin, db.Model):
     #todo list function 2017/8/12
     events = db.relationship('Event', backref = 'sponsor', lazy = 'dynamic' )
 
+    starposts = db.relationship('Post', secondary='stars', backref=db.backref('stared', lazy='joined'), lazy='dynamic')
+
+
     @staticmethod
     def generate_fake(count=100):
         from sqlalchemy.exc import IntegrityError
@@ -273,6 +276,28 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
+    #收藏/取消收藏
+    def star(self, post):
+        if not self.staring(post):
+            s = Star(user_id=self.id, post_id=post.id)
+            db.session.add(s)
+            db.session.commit()
+
+    def unstar(self, post):
+        if self.staring(post):
+            uns = Star.query.filter_by(user_id=self.id, post_id=post.id).first()
+            db.session.delete(uns)
+            db.session.commit()
+
+    def staring(self, post):
+        if Star.query.filter_by(user_id=self.id, post_id=post.id).first():
+            return True
+        else:
+            return False
+
+    def startimestamp(self, post):
+        star = Star.query.filter_by(user_id=self.id, post_id=post.id).first()
+        return star.timestamp
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
@@ -280,6 +305,7 @@ class AnonymousUser(AnonymousUserMixin):
 
     def is_administrator(self):
         return False
+
 
 login_manager.anonymous_user = AnonymousUser
 
@@ -434,3 +460,10 @@ class Category(db.Model):
             db.session.add(category)
         db.session.commit()
 
+#添加post收藏功能2017-10-2
+class Star(db.Model):
+    __tablename__ = 'stars'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+    timestamp = db.Column(db.DateTime, default=datetime.now)

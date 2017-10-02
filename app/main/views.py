@@ -7,7 +7,7 @@ from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
     CommentForm, AddPostCategoryForm
 from .. import db
-from ..models import Permission, Role, User, Post, Comment, PostCategory
+from ..models import Permission, Role, User, Post, Comment, PostCategory, Star
 from ..decorators import admin_required, permission_required
 import os
 #from werkzeug.utils import secure_filename # [HCX]: temp unused!
@@ -349,3 +349,38 @@ def moderate_disable(id):
     db.session.add(comment)
     return redirect(url_for('.moderate',
                             page=request.args.get('page', 1, type=int)))
+
+#添加收藏文章和取消收藏的路由2017-10-2
+@main.route('/star/<int:id>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def star(id):
+    post = Post.query.get_or_404(id)
+    if current_user.staring(post):
+        flash('You have already star the post!')
+        return redirect(url_for('.post', id=post.id))
+    current_user.star(post)
+    flash('Star the post complete!')
+    return redirect(url_for('.post',id=post.id))
+
+@main.route('/unstar/<int:id>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def unstar(id):
+    post=Post.query.get_or_404(id)
+    if not current_user.staring(post):
+        flash('You have not star the post.')
+        return redirect(url_for('.post', id=post.id))
+    current_user.unstar(post)
+    flash('Cancel star complete!')
+    return redirect(url_for('.post', id=post.id))
+
+@main.route('/starposts/<username>')
+def starposts(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    page = request.args.get('page', 1, type=int)
+    posts = user.starposts
+    return render_template('starposts.html', user=user, title=u"收藏的文章", posts=posts)
