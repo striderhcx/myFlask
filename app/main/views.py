@@ -6,7 +6,8 @@ from flask_sqlalchemy import get_debug_queries
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
     CommentForm, AddPostCategoryForm
-from .. import db
+from .. import db, celery, mail, create_app
+from ..tasks.celery_mail import send_async_email
 from ..models import Permission, Role, User, Post, Comment, PostCategory, Star
 from ..decorators import admin_required, permission_required
 import os
@@ -44,6 +45,10 @@ def index():
                     author=current_user._get_current_object(),
                     category=PostCategory.query.get(form.category.data))
         db.session.add(post)
+        #测试用celery发送邮件
+        send_async_email.delay('2789508894@qq.com', "{}'s new post:".format(current_user.username), post.body)
+        flash('celery email has send!')
+
         return redirect(url_for('.index'))
     page = request.args.get('page', 1, type=int)
     show_followed = False

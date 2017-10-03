@@ -21,6 +21,9 @@ class Config:
     FLASKY_COMMENTS_PER_PAGE = 30
     FLASKY_SLOW_DB_QUERY_TIME=0.5
 
+    CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'
+
     UPLOAD_FOLDER = os.getcwd() + '/app/static/avatar/'
 
     @staticmethod
