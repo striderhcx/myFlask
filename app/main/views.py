@@ -5,10 +5,11 @@ from flask_login import login_required, current_user
 from flask_sqlalchemy import get_debug_queries
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
-    CommentForm, AddPostCategoryForm
+    CommentForm, AddPostCategoryForm, SendMessageForm
 from .. import db, celery, mail, create_app
-from ..tasks.celery_mail import send_async_email
-from ..models import Permission, Role, User, Post, Comment, PostCategory, Star
+from ..tasks.celery_mail import send_async_email, send_async_webpush
+from ..models import Permission, Role, User, Post, Comment, PostCategory, Star,\
+    Message, Webpush
 from ..decorators import admin_required, permission_required
 import os
 #from werkzeug.utils import secure_filename # [HCX]: temp unused!
@@ -45,9 +46,11 @@ def index():
                     author=current_user._get_current_object(),
                     category=PostCategory.query.get(form.category.data))
         db.session.add(post)
+        db.session.commit()
         #测试用celery发送邮件
         send_async_email.delay('2789508894@qq.com', "{}'s new post:".format(current_user.username), post.body)
         flash('celery email has send!')
+        send_async_webpush.delay(username=current_user.username,postid=post.id)
 
         return redirect(url_for('.index'))
     page = request.args.get('page', 1, type=int)
@@ -389,3 +392,102 @@ def starposts(username):
     page = request.args.get('page', 1, type=int)
     posts = user.starposts
     return render_template('starposts.html', user=user, title=u"收藏的文章", posts=posts)
+
+###添加私信和推送消息的路由
+
+@main.route('/<username>/showwebpush')
+@login_required
+@permission_required(Permission.COMMENT)
+def showwebpush(username):
+    page = request.args.get('page', 1, type=int)
+    pagination = Webpush.query.order_by(Webpush.timestamp.desc()).filter_by(sendto=current_user).paginate(
+            page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+            error_out=False)
+    webpushs = pagination.items
+    return render_template('user_showwebpush.html',webpushs=webpushs, pagination=pagination, page=page)
+
+@main.route('/webpush/confirmed/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def webpush_confirmed(id):
+    webpush = Webpush.query.get_or_404(id)
+    webpush.confirmed = True
+    db.session.add(webpush)
+    return redirect(url_for('.showwebpush',page=request.args.get('page', 1, type=int),username=request.args.get('username')))
+
+@main.route('/webpush/unconfirmed/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def webpush_unconfirmed(id):
+    webpush = Webpush.query.get_or_404(id)
+    webpush.confirmed = False
+    db.session.add(webpush)
+    return redirect(url_for('.showwebpush', page=request.args.get('page', 1, type=int), username=request.args.get('username')))
+
+@main.route('/showwebpush/delete/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def webpush_delete(id):
+    webpush = Webpush.query.get_or_404(id)
+    db.session.delete(webpush)
+    flash('webpush delete success')
+    return redirect(url_for('.showwebpush', page=request.args.get('page', 1, type=int), username=request.args.get('username')))
+
+#发送私信
+@main.route('/sendmessage/<username>', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.COMMENT)
+def sendmessage(username):
+    user = User.query.filter_by(username=username).first()
+    form = SendMessageForm()
+    if form.validate_on_submit():
+        message = Message(body=form.body.data, \
+                    author=current_user._get_current_object(),
+                    sendto=user)
+        db.session.add(message)
+        db.session.commit()
+        flash('message send ok!')
+        return redirect(url_for('.user', username=username))
+    return render_template('sendmessage.html', form=form)
+
+#查看自己的私信
+@main.route('/showmessage')
+@login_required
+@permission_required(Permission.COMMENT)
+def showmessage():
+    page = request.args.get('page', 1, type=int)
+    pagination = Message.query.order_by(Message.timestamp.desc()).filter_by(sendto=current_user).paginate(
+        page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+    messages = pagination.items
+    return render_template('showmessage.html', messages=messages,
+                            pagination=pagination, page=page)
+#标记私信为已读
+@main.route('/message/confirmed/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def message_confirmed(id):
+    message = Message.query.get_or_404(id)
+    message.confirmed = True
+    db.session.add(message)
+    return redirect(url_for('.showmessage', page=request.args.get('page', 1 ,type=int)))
+
+#标记私信为未读
+@main.route('/message/unconfirmed/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def message_unconfirmed(id):
+    message = Message.query.get_or_404(id)
+    message.confirmed = False
+    db.session.add(message)
+    return redirect(url_for('.showmessage', page=request.args.get('page', 1 ,type=int)))
+
+#删除私信
+@main.route('/showmessage/delete/<int:id>')
+@login_required
+@permission_required(Permission.COMMENT)
+def message_delete(id):
+    message = Message.query.get_or_404(id)
+    db.session.delete(message)
+    flash('delete message success!')
+    return redirect(url_for('.showmessage', page=request.args.get('page', 1 ,type=int)))

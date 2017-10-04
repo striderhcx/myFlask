@@ -93,6 +93,48 @@ class User(UserMixin, db.Model):
 
     starposts = db.relationship('Post', secondary='stars', backref=db.backref('stared', lazy='joined'), lazy='dynamic')
 
+    #message and webpush
+    #用户发出的私信
+    messages_sen = db.relationship('Message', backref='author', lazy='dynamic',primaryjoin='Message.author_id==User.id')
+    #用户收到的私信
+    messages_rev = db.relationship('Message', backref='sendto', lazy='dynamic', primaryjoin='Message.sendto_id==User.id')
+    #用户收到的推送
+    webpushs_rev = db.relationship('Webpush', backref='sendto', lazy='dynamic', primaryjoin='Webpush.sendto_id==User.id')
+    #用户发出的推送
+    webpushs_sen = db.relationship('Webpush', backref='author', lazy='dynamic', primaryjoin='Webpush.author_id==User.id')
+
+###订阅推送
+    #未读推送
+    def unreadwebpushs(self):
+        webpushs=self.webpushs_rev
+        maxi=self.webpushs.count()
+        total=0
+        for i in range(0, maxi):
+            if not self.webpushs[i].confirmed:
+                total=total+1
+        return total
+    #最后一个推送
+    def lastwebpush(self):
+        if self.webpushs_rev.count()>0:
+            return self.webpushs_rev[-1]
+
+###私信
+    #未读私信
+    def unreadmessages(self):
+        maxi=self.messages_rev.count()
+        total=0
+        for i in range(0,maxi):
+            if not self.messages_rev[i].confirmed:
+                total=total+1
+        return total
+    #最后一个私信
+    def lastmessage(self):
+        last=self.messages_rev[-1]
+        return last
+    #最后一个私信来自谁
+    def lastmessagefrom(self):
+        lastfrom=self.messages_rev[-1].author
+        return lastfrom
 
     @staticmethod
     def generate_fake(count=100):
@@ -324,6 +366,7 @@ class Post(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     category_id = db.Column(db.Integer,db.ForeignKey('postcategories.id'))
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    webpushs = db.relationship('Webpush', backref='post', lazy='dynamic')
 
     @staticmethod
     def generate_fake(count=100):
@@ -467,3 +510,28 @@ class Star(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
     timestamp = db.Column(db.DateTime, default=datetime.now)
+
+##网站推送
+class Webpush(db.Model):
+    __tablename__ = 'webpushs'
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    confirmed = db.Column(db.Boolean, default=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    sendto_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    def __repr__(self):
+        return '<Webpush {} push_time {}>'.format(self.head,self.timestamp)
+
+##私信功能
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    sendto_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    confirmed = db.Column(db.Boolean,default=False)
+    def __repr__(self):
+        return '<Message {}  from {} sent to {}>'.format(self.body,self.author.username,self.sendto.username)

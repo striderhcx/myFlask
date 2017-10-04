@@ -70,3 +70,8 @@ class AddPostCategoryForm(FlaskForm):
 class CommentForm(FlaskForm):
     body = StringField('Enter your comment', validators=[Required()])
     submit = SubmitField('Submit')
+
+##发送私信的表单
+class SendMessageForm(FlaskForm):
+    body = StringField(u'私信内容', validators=[Length(0, 256)])
+    submit = SubmitField(u'发送')
