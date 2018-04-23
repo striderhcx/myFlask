@@ -1,7 +1,69 @@
 <ul class="posts">
     {% for post in posts %}
     <li class="post">
-        <div class="post-thumbnail">
+      <article class="article the-font" style="box-shadow: rgb(167, 163, 163) 5px 5px 20px; background: #F0FFF0 none repeat scroll 0% 0%;">
+        <a href="{{ url_for('main.post', id=post.id) }}"><h3 style="color:#34495E">{{ post.title }}</h3></a>
+        <p style="padding-left:20px;">
+            <i class="fa fa-user" aria-hidden="true"></i>
+            <a href="{{ url_for('main.user', username=post.author.username) }}">{{ post.author.username }}</a> &nbsp;
+            <small>
+                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                <span style="color:#8C8C8C;"> <span class="" data-timestamp="2017-03-29T02:09:24Z" data-format="format('YYYY/MM/DD')" data-refresh="0" style="">{{ post.timestamp }}</span></span>
+            </small>
+            <a href="{{ url_for('.category_posts',id=post.category.id, author_name=post.author.username) }}" style="float:right">
+                <span class="label label-success"><i class="fa fa-paperclip" aria-hidden="true"></i> 分类:{{ post.category.name }}</span>
+            </a>
+        </p>
+        <div class="post-alert">版权声明：本文版权归作者所有，转载请注明地址。</div>
+        
+        <div class="post-body">
+        {% if post.body_html %}
+            {{ post.body_html | safe }}
+        {% else %}
+            {{ post.body }}
+        {% endif %}
+        <!--<p>数据库是web开发中必然要接触到的，也是web程序中比较重要的组成。</p>-->
+        <!--<p>书中使用的数据库是关系型数据库，即SQL 数据库，使用结构化查询语言。这里使用的是轻量级别的SQLite包。</p>-->
+        <!--<p>选用数据库框架考虑的因素：</p>-->
+        <!--<ul>-->
+        <!--<li>易用性</li>-->
+        <!--<li>性能</li>-->
+        <!--<li>可移植性</li>-->
+        <!--<li>Flask集成度</li>-->
+        <!--</ul>-->
+        <!--<p>这里使用的是Flask-SQLAlchemy管理数据库，提供了高层的ORM，也提供了使用数据库原生 SQL 的低层功能。</p>-->
+                
+        </div>
+        <div style="border-top:1px solid #EBEBEB;padding:20px 5px;margin-bottom:20px;">
+            <span style="float:right;">
+                <a href="{{ url_for('main.post', id=post.id) }}">
+                    <button class="btn  btn-info">
+                        <i class="fa fa-comment" aria-hidden="true"></i>评论({{ post.comments.count() }})
+                    </button>
+                </a>
+                
+                <a href="{{ url_for('main.post', id=post.id) }}">
+                    <button class="btn  btn-inverse"><i class="fa fa-chevron-circle-down" aria-hidden="true"></i> 详情</button>
+                </a>
+                {% if current_user == post.author %}
+                <a href="{{ url_for('main.delete', id=post.id) }}">
+                    <button class="btn  btn-warning"><i class="fa fa-times" aria-hidden="true"></i> 删除</button>
+                </a>
+                {% elif current_user.is_authenticated %}
+                    {% if not current_user.staring(post) %}
+                        <a href="{{ url_for('main.star', id=post.id) }}">
+                        <button class="btn  btn-info"><i class="fa fa-star-o" aria-hidden="true"></i> 收藏</button>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('main.unstar', id=post.id) }}">
+                        <button class="btn  btn-info"><i class="fa fa-star" aria-hidden="true"></i>取消收藏</button>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </span>
+        </div>
+    </article>
+<!--         <div class="post-thumbnail">
             <a href="{{ url_for('.user', username=post.author.username) }}">
                 {% if post.author.real_avatar %}
                 <img class="img-rounded profile-thumbnail" height="40" width="40" src="{{ post.author.real_avatar }}">
@@ -19,8 +81,9 @@
                 {% else %}
                     {{ post.body }}
                 {% endif %}
-            </div>
-            <div class="post-footer">
+            </div> -->
+            
+         <!--    <div class="post-footer">
 		 <a href="{{ url_for('.category_posts',id=post.category.id, author_name=post.author.username) }}">
 		    <span class="label label-primary">分类:{{ post.category.name }}</span>
 		</a>
@@ -57,7 +120,7 @@
                     <span class="label label-primary">{{ post.comments.count() }} 次评论</span>
                 </a>
             </div>
-        </div>
+        </div> -->
     </li>
     {% endfor %}
 </ul>

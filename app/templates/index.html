@@ -2,47 +2,52 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
 
-{% block title %}Flasky{% endblock %}
+{% block title %}ihxn's blog{% endblock %}
 
 {% block page_content %}
-<div class="page-header">
-    <h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Stranger{% endif %}!</h1>
-</div>
-
-<div style="float:right; margin:0px;padding:0px;">
-    <em>文章分类</em>
-    <ul>
-	{% for category in post_categories %}
-	    <li>
-	        <a href="{{ url_for('.category_posts', author_name=current_user.username, id=category.id) }}">
-                {{ category.name }}
-            </a>
-	    </li>
-	{% endfor %}
-    <a href="{{ url_for('.add_post_category') }}">添加文章分类</a>
-    </ul>
-</div>
-
-<div>
-    {% if current_user.can(Permission.WRITE_ARTICLES) %}
-    {{ wtf.quick_form(form) }}
-    {% endif %}
-</div>
-
-<div class="post-tabs">
-    <ul class="nav nav-tabs">
-        <li{% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_all') }}">All</a></li>
-        {% if current_user.is_authenticated %}
-        <li{% if show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_followed') }}">Followers</a></li>
-        {% endif %}
-    </ul>
-    {% include '_posts.html' %}
-</div>
-{% if pagination %}
-<div class="pagination">
-    {{ macros.pagination_widget(pagination, '.index') }}
-</div>
-{% endif %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-9">
+            {% include '_posts.html' %}
+            </div>
+            {% if current_user.is_authenticated %}
+            <div class="col-md-3">
+                <div class="share mrl the-font" style="background:#fbfaf5;box-shadow:5px 5px 20px #CCC;width:260px;">
+                    <div style="padding:10px;">
+                        <div style="border-bottom:1px solid #DAD4D4;;padding:10px 10px;">
+                            <h5><i class="fa fa-paperclip" aria-hidden="true"></i> 分类</h5>
+                        </div>
+                        <ul>
+                            {% for category in post_categories %}
+                                <li class="presentation" style="padding-top:0px;">
+                                    <a href="{{ url_for('.category_posts', author_name=current_user.username, id=category.id) }}">
+                                        <p>
+                                            <span style="font-size:15px;">
+                                                <i class="fa fa-search" aria-hidden="true"></i>{{ category.name }}
+                                            </span>
+                                            <span class="badge text-right" style="float:right">
+                                                {{ category.posts.count() }}
+                                            </span>
+                                        </p>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-md-3">
+                <span>您当前为游客模式，不能发表博客、发送私信等功能，想体验全功能，请<a href="{{ url_for('auth.login') }}">登录</a></span>
+            </div>
+            {% endif %}
+            {% if pagination %}
+            <div  class="col-md-12">
+                {{ macros.pagination_widget(pagination, '.index') }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}

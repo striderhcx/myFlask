@@ -36,13 +36,31 @@ def server_shutdown():
     shutdown()
     return 'Shutting down...'
 
+#同步建立推送，不使用celery
+def send_sync_webpush(username, postid):
+    user = User.query.filter_by(username=username).first()
+    print('user:', user)
+    post = Post.query.get_or_404(postid)
+    followers = user.followers
+    print('followers:', user.followers)
+    for follower in followers:
+        print('follower:', follower)
+        if follower.follower != user:
+            print('follower.follower:', follower.follower)
+            webpush = Webpush(sendto=follower.follower, author=user, post_id=post.id)
+            db.session.add(webpush)
+    db.session.commit()
+
+@main.route('/about_me/', methods=['GET', 'POST'])
+def about_me():
+    return render_template('resume/dist/index.html')
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
     form = PostForm()
     if current_user.can(Permission.WRITE_ARTICLES) and \
             form.validate_on_submit():
-        post = Post(body=form.body.data,
+        post = Post(title=form.title.data, body=form.body.data,
                     author=current_user._get_current_object(),
                     category=PostCategory.query.get(form.category.data))
         db.session.add(post)
@@ -50,8 +68,7 @@ def index():
         #测试用celery发送邮件
         send_async_email.delay('2789508894@qq.com', "{}'s new post:".format(current_user.username), post.body)
         flash('celery email has send!')
-        send_async_webpush.delay(username=current_user.username,postid=post.id)
-
+        # send_async_webpush.delay(username=current_user.username,postid=post.id)
         return redirect(url_for('.index'))
     page = request.args.get('page', 1, type=int)
     show_followed = False
@@ -145,6 +162,22 @@ def edit_profile_admin(id):
     form.location.data = user.location
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form, user=user)
+
+@main.route('/post/new/', methods=['GET', 'POST'])
+@login_required
+def newpost():
+    form = PostForm()
+    if request.method == 'GET':
+        return render_template('new_post.html', form=form)
+    if current_user.can(Permission.WRITE_ARTICLES) and \
+            form.validate_on_submit():
+        post = Post(title=form.title.data, body=form.body.data,
+                    author=current_user._get_current_object(),
+                    category=PostCategory.query.get(form.category.data))
+        db.session.add(post)
+        db.session.commit()
+        send_sync_webpush(username=current_user.username, postid=post.id)
+    return redirect(url_for('main.index'))
 
 
 @main.route('/post/<int:id>', methods=['GET', 'POST'])

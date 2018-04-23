@@ -1,74 +1,140 @@
 {% extends "bootstrap/base.html" %}
 
-{% block title %}Flasky{% endblock %}
+{% block title %}ihxn's blog{% endblock %}
 
 {% block head %}
 {{ super() }}
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+
+<link rel="shortcut icon" href="/static/favicon.ico" type="imge/x-icon">
+<link rel="icon" href="/static/favicon.ico" type="imge/x-icon">
+<link rel="stylesheet" type="text/css" href="/static/styles.css">
+<link rel="stylesheet" type="text/css" href="/static/mystyle.css">
+<link href="/static/font-awesome.css" rel="stylesheet">
+<link href="/static/flat-ui.css" rel="stylesheet">
+<style type="text/css">
+        h1{
+            font-size:50px;
+        }
+        h2{
+            font-size: 40px;
+        }
+        h3{
+            font-size: 30px;
+        }
+        p{
+            font-size: 15px;
+        }
+        blockquote p{
+            font-size: 17px;
+        }
+        body{
+            font-size: 15px;
+            background-color:#d4dcd6;
+        }
+ </style>
 {% endblock %}
 
 {% block navbar %}
-<div class="navbar navbar-inverse" role="navigation">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">基于flask框架的博客</a>
+    <nav class="navbar-default navbar-Amethyst" style="padding:50px 0px;background:#d4dcd6;">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-01">
+                    <span class="sr-only">Toggle navigation</span>
+                </button>
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">BLOG</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar-collapse-01">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="{{ url_for('main.index') }}">主页</a></li>
+                    <li><a href="{{ url_for('main.about_me') }}">关于本站开发者</a></li>
+                    {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('main.user', username=current_user.username) }}">个人资料介绍</a></li>
+                    <li><a href="{{ url_for('todolist.show') }}">我的todo</a></li>
+                    <li><a href="{{ url_for('main.starposts', username=current_user.username) }}">我的收藏({{ current_user.starposts.count() }})</a></li>
+                    <li><a href="{{ url_for('main.showmessage') }}">我的私信({{ current_user.messages_rev.count() }})</a></li>
+                    <li><a href="{{ url_for('main.showwebpush', username=current_user.username) }}">我的推送({{ current_user.webpushs_rev.count() }})</a></li>
+                    <li {% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('main.show_all') }}">所有人</a></li>
+                    {% if current_user.is_authenticated %}
+                    <li {% if show_followed %} class="active"{% endif %}><a href="{{ url_for('main.show_followed') }}">我的粉丝({{ current_user.followers.count() }})</a></li>
+                    {% endif %}
+                {% endif %}
+                    
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_authenticated %}
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                <img src="{{ current_user.gravatar(size=18) }}">
+                                我的帐号<b class="caret"></b>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{{ url_for('auth.change_password') }}">修改密码</a></li>
+                                <li><a href="{{ url_for('auth.change_email_request') }}">修改邮件地址</a></li>
+                                <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <li><a href="{{ url_for('auth.login') }}">登录</a></li>
+                        {% endif %}
+                </ul>
+            </div>
         </div>
-        <div class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-                <li><a href="{{ url_for('main.index') }}">首页</a></li>
-                {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('main.user', username=current_user.username) }}">个人资料介绍</a></li>
-                <li><a href="{{ url_for('todolist.show') }}">我的todo</a></li>
-                <li><a href="{{ url_for('main.starposts', username=current_user.username) }}">我的收藏({{ current_user.starposts.count() }})</a></li>
-                <li><a href="{{ url_for('main.showmessage') }}">我的私信({{ current_user.messages_rev.count() }})</a></li>
-                <li><a href="{{ url_for('main.showwebpush', username=current_user.username) }}">我的推送({{ current_user.webpushs_rev.count() }})</a></li>
-                {% endif %}
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-                {% if current_user.can(Permission.MODERATE_COMMENTS) %}
-                <li><a href="{{ url_for('main.moderate') }}">管理评论</a></li>
-                {% endif %}
-                {% if current_user.is_authenticated %}
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <img src="{{ current_user.gravatar(size=18) }}">
-                        我的帐号<b class="caret"></b>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a href="{{ url_for('auth.change_password') }}">修改密码</a></li>
-                        <li><a href="{{ url_for('auth.change_email_request') }}">修改邮件地址</a></li>
-                        <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
-                    </ul>
-                </li>
-                {% else %}
-                <li><a href="{{ url_for('auth.login') }}">登录</a></li>
-                {% endif %}
-            </ul>
+    </nav>
+
+    
+    
+    <div class="jumbotron" style="padding-bottom:100px;background:#426579;">
+        <div class="container">
+            {% if current_user.is_authenticated %}
+            <h2 style="color:#E7DBDB">{{ current_user.username }}'s Blog</h2>
+            <a href="{{ url_for('main.newpost') }}"><button class="btn btn-danger btn-wide the-font">写博客</button></a>
+            {% endif %}
+            <p class="lead" style="color:#E7DBDB">生活中真正的勇士向来默默无闻， 喧哗不止的永远是自视高贵的一群。 不要怕苦难！ 如果能深刻理解苦难，苦难就会给你带来崇高感。 如果生活需要你忍受苦难，你一定要咬紧牙关坚持下去， 有位了不起的人说过：痛苦难道是白受的吗？它应该使我们伟大！ 劳动是医治痛苦的良药 活着，是多么幸福的事情！ 花朵是美丽的，果实的价值更高 责任是让一个男孩成长为男	人的最好的 催化剂 不可	思议吗？世界	上又有多少事不可思议！ 而最不	可思议的	"正是人,人的感情。 不要见怪，不要见外 命运总是不如人愿。 但往往是在无数的痛苦中，在重重的矛盾和艰难中，才使人成熟起来，坚强起来； 虽然这些东西在实际感受中给人带来的并不都是欢乐。 ——路遥 《平凡的世界》</p>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    {% for message in get_flashed_messages() %}
-    <div class="alert alert-warning">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        {{ message }}
+    <div class="container">
+        {% for message in get_flashed_messages() %}
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-
     {% block page_content %}{% endblock %}
-</div>
+
+    <div style="background:#426579 none repeat scroll 0% 0%;color:#BFC9D3">
+    <div class="container">
+        <div class="row" style="padding-top:30px;">
+            <div class="col-md-7">
+                <h5 style="margin-bottom:15px;margin-left:18px;"><strong>ABOUT</strong></h5>
+                <p style="padding:10px 150px 10px 20px"><strong>ihxn's Blog </strong>  &nbsp;本博客属个人所有，不涉及商业目的。基于flask和bootstrap编写，用于记录互联网学习，个人感想的博客网站。网站部署在云平台heroku上。</p>
+
+            </div>
+            <div class="col-md-5">
+                <div>
+                    <h5 style="margin-bottom:15px;margin-left:18px;"><strong>CONTACT ME</strong></h5>
+                    <ul class="list-unstyled" style="margin-bottom:15px;margin-left:30px;">
+                        <li><a href="http://weibo.com/u/6307938833"><i class="fa fa-weibo" aria-hidden="true"></i> &nbsp; ihxn的微博</a></li>
+                        <li><a href="https://github.com/striderhcx/myFlask"><i class="fa fa-github" aria-hidden="true"></i> &nbsp; ihxn的blog github源码</a></li>
+                        <li><a href="http://193.112.163.123"><i class="fa fa-envelope" aria-hidden="true" fa-5x=""></i> &nbsp; 友情链接ihxn的论坛</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-12 text-center" style="padding-top:30px;">
+                <p> <small>© COPYRIGHT BY IHXN 2018</small></p>
+            </div>
+        </div>
+    </div>
+    </div>
 {% endblock %}
+
+
 
 {% block scripts %}
 {{ super() }}

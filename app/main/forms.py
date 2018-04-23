@@ -54,6 +54,7 @@ class EditProfileAdminForm(FlaskForm):
 
 
 class PostForm(FlaskForm):
+    title = StringField(u'标题', validators=[Required()])
     body = PageDownField("What's on your mind?", validators=[Required()])
     category = SelectField(u'文章分类', coerce=int)
     submit = SubmitField('Submit')
