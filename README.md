@@ -24,4 +24,5 @@ python2.7 和 pytyhon3.6试过都可以正常运行
 
 备注：
 -----
-部署在免费的平台https://www.heroku.com/上，国外的平台，访问速度比较慢。
+展示地址：https://ihxn.herokuapp.com/
+部署在免费的heroku平台上，国外的平台，访问速度比较慢。
