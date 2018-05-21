@@ -26,3 +26,6 @@ python2.7 和 pytyhon3.6试过都可以正常运行
 -----
 展示地址：https://ihxn.herokuapp.com/
 部署在免费的heroku平台上，国外的平台，访问速度比较慢。
+
+![image](https://github.com/striderhcx/myFlask/blob/master/%E5%8D%9A%E5%AE%A2.gif)
+
